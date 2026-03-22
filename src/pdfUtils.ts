@@ -96,7 +96,7 @@ export async function createPdf(state: any) {
   drawCentered(state.issuedByName || "", 352, 1101);
 
   const pdfBytes = await pdfDoc.save();
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+  const blob = new Blob([pdfBytes as unknown as BlobPart], {type: "application/pdf"} );
   const url = URL.createObjectURL(blob);
 
   window.open(url, "_blank");
