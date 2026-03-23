@@ -99,5 +99,28 @@ export async function createPdf(state: any) {
   const blob = new Blob([pdfBytes as unknown as BlobPart], {type: "application/pdf"} );
   const url = URL.createObjectURL(blob);
 
-  window.open(url, "_blank");
+  //Datum bauen
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth() + 1;
+  const year = 
+  String(now.getFullYear()).slice(-2);
+
+  //Dateiname
+  const fileName = `brezel_$
+  {state.trainNumber || "unbekannt"}_${day}$
+  {month}${year}.pdf`;
+
+  //Download auslösen
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // TAB mit Vorschau (leicht verzögert)
+  setTimeout(() => URL.revokeObjectURL(url),
+  2000);
+
 }
