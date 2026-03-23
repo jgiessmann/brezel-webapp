@@ -135,7 +135,7 @@ previewWindow.document.write(`
           justify-content: space-between;
           gap: 12px;
           padding: 12px 16px;
-          background: #6E53B3;
+          background: #3B5BDB;
           color: white;
           box-sizing: border-box;
         }
@@ -152,7 +152,7 @@ previewWindow.document.write(`
         }
         button {
           background: white;
-          color: #6E53B3;
+          color: #3B5BDB;
           border: none;
           border-radius: 10px;
           padding: 10px 14px;
