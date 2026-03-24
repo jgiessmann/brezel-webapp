@@ -18,6 +18,7 @@ export type ParsedSummary = {
   dangerousGoodsPresent: boolean;
   lowerSpeedKmh: number | null;
   allInGMode: boolean;
+  dBrakeCount: number,
 };
 
 type WagonRow = {
@@ -116,9 +117,14 @@ export function parseTrainCheckerText(text: string): ParsedSummary {
   const rows = parseRows(normalized);
   const lastVehicle = rows.length > 0 ? rows[rows.length - 1].wagonNumber : "";
 
-  const activeRows = rows.filter((r) => r.brakeP > 0 || r.brakeG > 0);
+  const activeRows = rows.filter((row) => row.brakeP > 0 || row.brakeG > 0);
+
   const multiRelease = activeRows.length;
-  const kLll = activeRows.filter((r) => ["K", "L", "LL"].includes(r.sole)).length;
+  const kLll = activeRows.filter((row) =>
+  ["K", "L", "LL"].includes(row.sole)
+  ).length;
+
+  const dCount = activeRows.filter((row) => row.sole === "D").length;
 
   const vmaxValues = rows
     .map((r) => r.vmax)
@@ -157,6 +163,7 @@ export function parseTrainCheckerText(text: string): ParsedSummary {
     totalBrakeWeightTons: finalBrake,
     multiReleaseBrakeCount: multiRelease,
     kLllBrakeCount: kLll,
+    dBrakeCount: dCount,
     dangerousGoodsPresent,
     lowerSpeedKmh: lowestVmax,
     allInGMode,
@@ -233,7 +240,7 @@ function parseSummary(text: string): Summary {
 function parseRows(text: string): WagonRow[] {
   const lines = text.split("\n");
   const wagonRegex = /\b\d{2}\s\d{2}\s\d{4}\s\d{3}-\d\b/;
-  const soleRegex = /\b(K|L|LL|R|P|G)\b/i;
+  const soleRegex = /\b(K|L|LL|D|F|R|P|G)\b/i;
 
   const rows: WagonRow[] = [];
 
@@ -242,12 +249,13 @@ function parseRows(text: string): WagonRow[] {
     if (!wagonMatch) continue;
 
     const soleMatch = line.match(soleRegex);
-    if (!soleMatch) continue;
+    const sole = soleMatch ? soleMatch[0].toUpperCase() : "";
 
     const wagon = wagonMatch[0];
-    const sole = soleMatch[0].toUpperCase();
 
-    const afterSole = line.substring(line.indexOf(soleMatch[0]) + soleMatch[0].length).trim();
+    const afterSole = soleMatch
+  ? line.substring(line.indexOf(soleMatch[0]) + soleMatch[0].length).trim()
+  : line;
 
     const numberTokens = [...afterSole.matchAll(/\b\d{1,3}\b/g)]
       .map((m) => parseIntSafe(m[0]));
