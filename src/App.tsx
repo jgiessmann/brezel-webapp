@@ -102,7 +102,7 @@ function App() {
       const stack = error?.stack || "";
 
       setPdfStatusText(`PDF Fehler: ${message} |
-      $stack}`);
+      ${stack}`);
     }
   }
 
