@@ -19,7 +19,7 @@ export async function createPdf(state: any) {
   text: string,
   x: number,
   y: number,
-  size = 12,
+  size = 18,
   isRed = false
 ) => {
   if (!text) return;
@@ -95,8 +95,8 @@ export async function createPdf(state: any) {
     drawCentered(
   state.lowerVehicleSpeedKmh || "",
   582,
-  758,
-  12,
+  763,
+  18,
   (state.lowerVehicleSpeedKmh || "") !== ""
 );
   } else {
@@ -111,7 +111,7 @@ export async function createPdf(state: any) {
   }
 
   // Name
-  drawCentered(state.issuedByName || "", 352, 1101);
+  drawCentered(state.issuedByName || "", 352, 1106);
 
  
 // PDF erzeugen
