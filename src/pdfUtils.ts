@@ -85,7 +85,7 @@ export async function createPdf(state: any) {
   drawCentered(state.lastVehicleNumber || "", 689, 468);
 
   // Zeile 8–12
-  drawCentered("0", 598, 493);
+  drawCentered("0", 598, 503);
   drawCentered(state.multiReleaseBrakeCount || "", 598, 522);
   drawCentered("0", 598, 547);
   drawCentered(state.kLllBrakeCount || "", 598, 571);
