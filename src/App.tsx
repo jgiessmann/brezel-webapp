@@ -101,8 +101,8 @@ function App() {
       String(error);
       const stack = error?.stack || "";
 
-      setPdfStatusText(`PDF Fehler: ${message}
-        $stack}`);
+      setPdfStatusText(`PDF Fehler: ${message} |
+      $stack}`);
     }
   }
 
