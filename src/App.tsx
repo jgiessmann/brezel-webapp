@@ -13,6 +13,7 @@ type LokType = {
 function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [zugStart, setZugStart] = useState(true);
   const [mode, setMode] = useState<"P" | "G">("P");
   const [selectedLok, setSelectedLok] = useState<"G1206" | "custom">("G1206");
   const [customLokOpen, setCustomLokOpen] = useState(false);
@@ -140,6 +141,7 @@ function App() {
       date: new Date().toLocaleDateString("de-DE"),
       trainNumber: parsedSummary.trainNumber,
       departureStation: parsedSummary.departureStation,
+      zugStart,
 
       wagonWeightTons: String(parsedSummary.totalWeightTons),
       locoWeightTons: String(activeLok.weightTons),
@@ -299,6 +301,43 @@ function App() {
         >
           Eigene Lok
         </button>
+        
+
+        <h3 style={{ marginTop: 24 }}>Zuganfangsbahnhof?</h3>
+
+<div style={{ display: "flex", gap: 10 }}>
+  <button
+    type="button"
+    onClick={() => setZugStart(true)}
+    style={{
+      flex: 1,
+      padding: "14px 0",
+      background: zugStart ? "#1976D2" : "#CFD8DC",
+      color: "white",
+      border: "none",
+      borderRadius: 20,
+      cursor: "pointer",
+    }}
+  >
+    Ja
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setZugStart(false)}
+    style={{
+      flex: 1,
+      padding: "14px 0",
+      background: !zugStart ? "#1976D2" : "#CFD8DC",
+      color: "white",
+      border: "none",
+      borderRadius: 20,
+      cursor: "pointer",
+    }}
+  >
+    Nein
+  </button>
+</div>
 
         <h3 style={{ marginTop: 24 }}>Bremsstellung laut Fahrplan</h3>
 

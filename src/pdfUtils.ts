@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 export async function createPdf(state: any) {
+  
   const pngBytes = await fetch("/bremszettel.png").then((res) => res.arrayBuffer());
 
   const pdfDoc = await PDFDocument.create();
@@ -52,7 +53,12 @@ export async function createPdf(state: any) {
   // Kopf
   drawCentered(state.date || "", 420, 60);
   drawCentered(state.trainNumber || "", 308, 167);
-  drawCentered(state.departureStation || "", 713, 166);
+
+
+  const abBhf = state.zugStart ? "" :
+  state.departureStation;
+  
+  drawCentered(abBhf || "", 713, 166);
 
   // Zeile 1 Gewicht
   drawCentered(state.wagonWeightTons || "", 599, 308);
