@@ -1,18 +1,15 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
-export async function createPdf(state: any) {
+export async function createPdf(state: any, reversedState?: any) {
   
   const pngBytes = await fetch("/bremszettel.png").then((res) => res.arrayBuffer());
-
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([842, 1191]);
-  const font = await
-  pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await
-  pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const pngImage = await pdfDoc.embedPng(pngBytes);
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+const pngImage = await pdfDoc.embedPng(pngBytes);
 
+const drawPage = (page: any, state: any) => {
   page.drawImage(pngImage, {
     x: 0,
     y: 0,
@@ -55,8 +52,12 @@ export async function createPdf(state: any) {
   drawCentered(state.trainNumber || "", 308, 167);
 
 
-  const abBhf = state.zugStart ? "" :
-  state.departureStation;
+  const abBhf =
+  state.directionChange && state.directionChangeStation.trim() !== ""
+    ? state.departureStation
+    : state.zugStart
+    ? ""
+    : state.departureStation;
   
   drawCentered(abBhf || "", 713, 166);
 
@@ -152,8 +153,16 @@ if (gesamtZuLangsam) {
 
   // Name
   drawCentered(state.issuedByName || "", 352, 1106);
+};
 
- 
+const firstPage = pdfDoc.addPage([842, 1191]);
+drawPage(firstPage, state);
+
+if (reversedState) {
+  const secondPage = pdfDoc.addPage([842, 1191]);
+  drawPage(secondPage, reversedState);
+}
+
 // PDF erzeugen
 const pdfBytes = await pdfDoc.save();
 

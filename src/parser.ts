@@ -7,6 +7,8 @@ export type ParsedSummary = {
   trainNumber: string;
   departureStation: string;
   destinationStation: string;
+  firstVehicleNumber: string;
+  firstBrakeWeight: number;
   lastVehicleNumber: string;
   totalAxles: number;
   totalLengthMeters: number;
@@ -114,6 +116,10 @@ export function parseTrainCheckerText(text: string): ParsedSummary {
   const rows = parseRows(normalized);
   const lastVehicle = rows.length > 0 ? rows[rows.length - 1].wagonNumber : "";
 
+  const firstVehicle = rows.length > 0 ? rows[0].wagonNumber : "";
+  const firstBrakeWeight =
+  rows.length > 0 ? Math.max(rows[0].brakeP, rows[0].brakeG) : 0;
+
   const activeRows = rows.filter((row) => row.brakeP > 0 || row.brakeG > 0);
 
   const multiRelease = activeRows.length;
@@ -152,6 +158,8 @@ export function parseTrainCheckerText(text: string): ParsedSummary {
     trainNumber,
     departureStation,
     destinationStation: "",
+    firstVehicleNumber: firstVehicle,
+    firstBrakeWeight,
     lastVehicleNumber: lastVehicle,
     totalAxles: sum.axles,
     totalLengthMeters: sum.lengthMeters,

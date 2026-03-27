@@ -40,6 +40,10 @@ function App() {
   const [customLokLength, setCustomLokLength] = useState("");
   const [customLokVmax, setCustomLokVmax] = useState("");
 
+  const [directionChange, setDirectionChange] = useState(false);
+  const [showDirectionChangeModal, setShowDirectionChangeModal] = useState(false);
+  const [directionChangeStation, setDirectionChangeStation] = useState("");
+
   const g1206: LokType = {
     name: "G1206",
     weightTons: 88,
@@ -147,6 +151,12 @@ function App() {
       trainNumber: parsedSummary.trainNumber,
       departureStation: parsedSummary.departureStation,
       zugStart,
+      directionChange,
+      directionChangeStation,
+      firstVehicleNumber:
+      parsedSummary.firstVehicleNumber,
+      firstBrakeWeight:
+      parsedSummary.firstBrakeWeight,
       lokVmax: activeLok.vmax,
       fahrplanVmax: parseInt(timetableSpeed || "0", 10),
   
@@ -192,6 +202,28 @@ function App() {
       return;
     }
 
+    if (state.directionChange && state.directionChangeStation.trim() !== "") {
+  const wagonWeight = parseInt(state.wagonWeightTons || "0", 10);
+
+  if (wagonWeight >= 1200) {
+    setWarningText(
+      "Achtung! Richtungswechsel nicht zulässig! Wagenzuggewicht liegt bei mehr als 1200 Tonnen! Neue Wagenliste erforderlich!"
+    );
+    setPendingPdfState(null);
+    setWarningOpen(true);
+    return;
+  }
+
+  if ((state.firstBrakeWeight || 0) === 0) {
+    setWarningText(
+      "Achtung! Richtungswechsel nicht zulässig! Nach dem Richtungswechsel hat der letzte Wagen keine wirkende Druckluftbremse! Neue Wagenliste erforderlich!"
+    );
+    setPendingPdfState(null);
+    setWarningOpen(true);
+    return;
+  }
+}
+
     const missing = parseInt(state.missingBrakePercentage || "0", 10) || 0;
     const lowerSpeed = parseInt(state.lowerSpeedKmh || "0", 10) || 0;
 
@@ -226,17 +258,41 @@ if (state.speedCheckNo && lowerSpeed > 0) {
       return;
     }
 
-    createPdf(state);
+    if (state.directionChange && state.directionChangeStation.trim() !== "") {
+  const reversedState = {
+    ...state,
+    lastVehicleNumber: state.firstVehicleNumber,
+    departureStation: state.directionChangeStation,
+  };
+
+  createPdf(state, reversedState);
+} else {
+  createPdf(state);
+}
   }
 
   function confirmWarningAndOpenPdf() {
-    setWarningOpen(false);
+  setWarningOpen(false);
 
-    if (pendingPdfState) {
+  if (pendingPdfState) {
+    if (
+      pendingPdfState.directionChange &&
+      pendingPdfState.directionChangeStation.trim() !== ""
+    ) {
+      const reversedState = {
+        ...pendingPdfState,
+        lastVehicleNumber: pendingPdfState.firstVehicleNumber,
+        departureStation: pendingPdfState.directionChangeStation,
+      };
+
+      createPdf(pendingPdfState, reversedState);
+    } else {
       createPdf(pendingPdfState);
-      setPendingPdfState(null);
     }
+
+    setPendingPdfState(null);
   }
+}
 
   return (
     <>
@@ -321,10 +377,11 @@ if (state.speedCheckNo && lowerSpeed > 0) {
           Eigene Lok
         </button>
         
+        
 
-        <h3 style={{ marginTop: 24 }}>Zuganfangsbahnhof?</h3>
+  <h3 style={{ marginTop: 24 }}>Zuganfangsbahnhof?</h3>
 
-<div style={{ display: "flex", gap: 10 }}>
+<div style={{ display: "flex", gap: 10, width: "100%" }}>
   <button
     type="button"
     onClick={() => setZugStart(true)}
@@ -355,6 +412,49 @@ if (state.speedCheckNo && lowerSpeed > 0) {
     }}
   >
     Nein
+  </button>
+</div>
+
+<h3 style={{ marginTop: 24 }}>Richtungswechsel auf Laufweg?</h3>
+
+<div style={{ display: "flex", gap: 10, width: "100%" }}>
+  <button
+    type="button"
+    onClick={() => {
+      setDirectionChange(false);
+      setShowDirectionChangeModal(false);
+      setDirectionChangeStation("");
+    }}
+    style={{
+      flex: 1,
+      padding: "14px 0",
+      background: !directionChange ? "#1976D2" : "#CFD8DC",
+      color: "white",
+      border: "none",
+      borderRadius: 20,
+      cursor: "pointer",
+    }}
+  >
+    Nein
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      setDirectionChange(true);
+      setShowDirectionChangeModal(true);
+    }}
+    style={{
+      flex: 1,
+      padding: "14px 0",
+      background: directionChange ? "#1976D2" : "#CFD8DC",
+      color: "white",
+      border: "none",
+      borderRadius: 20,
+      cursor: "pointer",
+    }}
+  >
+    Ja
   </button>
 </div>
 
@@ -439,7 +539,8 @@ if (state.speedCheckNo && lowerSpeed > 0) {
         >
           BREZEL-Master | Web-Version | by Jonas Gießmann
         </div>
-      </div>
+
+        </div>
 
       {customLokOpen && (
         <div
@@ -551,6 +652,87 @@ if (state.speedCheckNo && lowerSpeed > 0) {
           </div>
         </div>
       )}
+
+      {showDirectionChangeModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.35)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+    }}
+  >
+    <div
+      style={{
+        background: "white",
+        padding: 20,
+        borderRadius: 16,
+        width: "90%",
+        maxWidth: 420,
+      }}
+    >
+      <h3>Betriebsstelle des Richtungswechsels</h3>
+
+      <input
+        value={directionChangeStation}
+        onChange={(e) => setDirectionChangeStation(e.target.value)}
+        placeholder="Betriebsstelle des Richtungswechsels"
+        style={{
+          width: "100%",
+          padding: 12,
+          marginTop: 10,
+          boxSizing: "border-box",
+        }}
+      />
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 10,
+          marginTop: 16,
+        }}
+      >
+        <button
+          onClick={() => {
+            setDirectionChange(false);
+            setShowDirectionChangeModal(false);
+            setDirectionChangeStation("");
+          }}
+          style={{
+            padding: "10px 16px",
+            background: "#B0BEC5",
+            color: "white",
+            border: "none",
+            borderRadius: 12,
+            cursor: "pointer",
+          }}
+        >
+          Abbrechen
+        </button>
+
+        <button
+          onClick={() => {
+            setShowDirectionChangeModal(false);
+          }}
+          style={{
+            padding: "10px 16px",
+            background: "#1976D2",
+            color: "white",
+            border: "none",
+            borderRadius: 12,
+            cursor: "pointer",
+          }}
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {warningOpen && (
         <div
