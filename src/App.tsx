@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
-import { createPdf } from "./pdfUtils";
-import { extractPdfText, parseTrainCheckerText, type ParsedSummary } from "./parser";
+import type { ParsedSummary } from "./parser";
 
 type LokType = {
   name: string;
@@ -122,6 +121,8 @@ function App() {
       setSelectedPdfName(file.name);
       setPdfStatusText("PDF wird eingelesen ...");
 
+      const { extractPdfText, parseTrainCheckerText } = await import("./parser");
+
       const text = await extractPdfText(file);
       const parsed = parseTrainCheckerText(text);
 
@@ -218,13 +219,15 @@ function App() {
     };
   }
 
-  function handleGeneratePdf() {
+  async function handleGeneratePdf() {
     const state = buildStateForPdf();
 
     if (!state) {
       alert("Bitte zuerst eine Wagenliste als PDF einfügen.");
       return;
     }
+
+    const { createPdf } = await import("./pdfUtils");
 
     if (state.directionChange && state.directionChangeStation.trim() !== "") {
   const wagonWeight = parseInt(state.wagonWeightTons || "0", 10);
@@ -295,8 +298,10 @@ if (state.speedCheckNo && lowerSpeed > 0) {
 }
   }
 
-  function confirmWarningAndOpenPdf() {
+  async function confirmWarningAndOpenPdf() {
   setWarningOpen(false);
+
+  const { createPdf } = await import("./pdfUtils");
 
   if (pendingPdfState) {
     if (
