@@ -31,6 +31,7 @@ function App() {
   const [warningOpen, setWarningOpen] = useState(false);
   const [warningText, setWarningText] = useState("");
   const [pendingPdfState, setPendingPdfState] = useState<any | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const [customLokName, setCustomLokName] = useState("");
   const [customLokWeight, setCustomLokWeight] = useState("");
@@ -227,6 +228,8 @@ function App() {
       return;
     }
 
+      setIsGeneratingPdf(true);
+
     const { createPdf } = await import("./pdfUtils");
 
     if (state.directionChange && state.directionChangeStation.trim() !== "") {
@@ -279,11 +282,12 @@ if (state.speedCheckNo && lowerSpeed > 0) {
 }
 
     if (warnings.length > 0) {
-      setWarningText(warnings.join("\n\n"));
-      setPendingPdfState(state);
-      setWarningOpen(true);
-      return;
-    }
+  setWarningText(warnings.join("\n\n"));
+  setPendingPdfState(state);
+  setWarningOpen(true);
+  setIsGeneratingPdf(false);
+  return;
+}
 
     if (state.directionChange && state.directionChangeStation.trim() !== "") {
   const reversedState = {
@@ -292,14 +296,17 @@ if (state.speedCheckNo && lowerSpeed > 0) {
     departureStation: state.directionChangeStation,
   };
 
-  createPdf(state, reversedState);
+  await createPdf(state, reversedState);
+  setIsGeneratingPdf(false);
 } else {
-  createPdf(state);
+  await createPdf(state);
+  setIsGeneratingPdf(false);
 }
   }
 
   async function confirmWarningAndOpenPdf() {
   setWarningOpen(false);
+  setIsGeneratingPdf(true);
 
   const { createPdf } = await import("./pdfUtils");
 
@@ -314,12 +321,15 @@ if (state.speedCheckNo && lowerSpeed > 0) {
         departureStation: pendingPdfState.directionChangeStation,
       };
 
-      createPdf(pendingPdfState, reversedState);
+            await createPdf(pendingPdfState, reversedState);
     } else {
-      createPdf(pendingPdfState);
+      await createPdf(pendingPdfState);
     }
 
     setPendingPdfState(null);
+    setIsGeneratingPdf(false);
+  }  else {
+    setIsGeneratingPdf(false);
   }
 }
 
@@ -543,20 +553,22 @@ if (state.speedCheckNo && lowerSpeed > 0) {
         />
 
         <button
-          onClick={handleGeneratePdf}
-          style={{
-            width: "100%",
-            padding: 14,
-            marginTop: 20,
-            background: "#6E53B3",
-            color: "white",
-            border: "none",
-            borderRadius: 20,
-            cursor: "pointer",
-          }}
-        >
-          Bremszettel generieren
-        </button>
+        onClick={handleGeneratePdf}
+        disabled={isGeneratingPdf}
+        style={{
+        width: "100%",
+        padding: 14,
+        marginTop: 20,
+        background: "#6E53B3",
+        color: "white",
+        border: "none",
+        borderRadius: 20,
+        cursor: isGeneratingPdf ? "default" : "pointer",
+        opacity: isGeneratingPdf ? 0.8 : 1,
+  }}
+>
+  {isGeneratingPdf ? "Bremszettel wird erzeugt ..." : "Bremszettel generieren"}
+</button>
 
         <div
           style={{
@@ -566,7 +578,7 @@ if (state.speedCheckNo && lowerSpeed > 0) {
             fontSize: 12,
           }}
         >
-          BREZEL-Master | Web-Version 2.0 | by Jonas Gießmann
+          BREZEL-Master | Web-Version 2.1 | by Jonas Gießmann
         </div>
 
         </div>
