@@ -8,6 +8,7 @@ type LokType = {
   brakeWeightG: number;
   lengthMeters: number;
   vmax: number;
+  axles: number;
 };
 
 function App() {
@@ -15,12 +16,19 @@ function App() {
 
   const [zugStart, setZugStart] = useState(true);
   const [mode, setMode] = useState<"P" | "G">("P");
-  const [selectedLok, setSelectedLok] = useState<"G1206" | "custom">("G1206");
+  const [selectedLok, setSelectedLok] = useState<"list" | "custom">("list");
+  const [selectedLokName, setSelectedLokName] = useState("G1206");
+  const [lokSelectOpen, setLokSelectOpen] = useState(false);
   const [customLokOpen, setCustomLokOpen] = useState(false);
 
   const [minimumBrakePercentage, setMinimumBrakePercentage] = useState("");
   const [issuedByName, setIssuedByName] = useState("");
   const [timetableSpeed, setTimetableSpeed] = useState("");
+  const [mainErrors, setMainErrors] = useState({
+  minimumBrakePercentage: false,
+  issuedByName: false,
+  timetableSpeed: false,
+  });
 
   const [selectedPdfName, setSelectedPdfName] = useState("");
   const [pdfStatusText, setPdfStatusText] = useState("Keine Wagenliste ausgewählt");
@@ -35,23 +43,63 @@ function App() {
 
   const [customLokName, setCustomLokName] = useState("");
   const [customLokWeight, setCustomLokWeight] = useState("");
+  const [customLokAxles, setCustomLokAxles] = useState("");
   const [customLokBrakeP, setCustomLokBrakeP] = useState("");
   const [customLokBrakeG, setCustomLokBrakeG] = useState("");
   const [customLokLength, setCustomLokLength] = useState("");
   const [customLokVmax, setCustomLokVmax] = useState("");
+  const [customErrors, setCustomErrors] = useState({
+  name: false,
+  weight: false,
+  brakeP: false,
+  brakeG: false,
+  length: false,
+  vmax: false,
+  axles: false,
+});
 
   const [directionChange, setDirectionChange] = useState(false);
   const [showDirectionChangeModal, setShowDirectionChangeModal] = useState(false);
   const [directionChangeStation, setDirectionChangeStation] = useState("");
 
-  const g1206: LokType = {
-    name: "G1206",
-    weightTons: 88,
-    brakeWeightP: 88,
-    brakeWeightG: 75,
-    lengthMeters: 15,
-    vmax: 100,
-  };
+  const locomotives: LokType[] = [
+    {
+      name: "G1206",
+      weightTons: 88,
+      brakeWeightP: 88,
+      brakeWeightG: 75,
+      lengthMeters: 15,
+      vmax: 100,
+      axles: 4,
+    },
+    {
+      name: "G1203",
+      weightTons: 72,
+      brakeWeightP: 66,
+      brakeWeightG: 53,
+      lengthMeters: 13,
+      vmax: 60,
+      axles: 4,
+    },
+    {
+      name: "V100",
+      weightTons: 62,
+      brakeWeightP: 65,
+      brakeWeightG: 57,
+      lengthMeters: 13,
+      vmax: 100,
+      axles: 4,
+    },
+    {
+      name: "DE18",
+      weightTons: 90,
+      brakeWeightP: 106,
+      brakeWeightG: 86,
+      lengthMeters: 17,
+      vmax: 120,
+      axles: 4,
+    },
+  ];
 
   const customLok: LokType = {
     name: customLokName || "Eigene Lok",
@@ -60,9 +108,13 @@ function App() {
     brakeWeightG: Number(customLokBrakeG) || 0,
     lengthMeters: Number(customLokLength) || 0,
     vmax: Number(customLokVmax) || 0,
+    axles: Number(customLokAxles) || 0,
   };
 
-  const activeLok = selectedLok === "G1206" ? g1206 : customLok;
+  const selectedListLok =
+  locomotives.find((lok) => lok.name === selectedLokName) || locomotives[0];
+
+  const activeLok = selectedLok === "custom" ? customLok : selectedListLok;
 
   function determineLocoBrakeWeight(
   lok: LokType,
@@ -153,7 +205,7 @@ function App() {
 
     const totalWeight = parsedSummary.totalWeightTons + activeLok.weightTons;
     const totalBrakeWeight = parsedSummary.totalBrakeWeightTons + locoBrakeWeight;
-    const totalAxles = parsedSummary.totalAxles + 4;
+    const totalAxles = parsedSummary.totalAxles + activeLok.axles;
     const totalLength = Math.ceil(parsedSummary.totalLengthMeters + activeLok.lengthMeters);
 
     const availableBrakePercentage =
@@ -195,7 +247,7 @@ function App() {
       totalBrakeWeightTons: String(totalBrakeWeight),
 
       wagonAxles: String(parsedSummary.totalAxles),
-      locoAxles: "4",
+      locoAxles: String(activeLok.axles),
       totalAxles: String(totalAxles),
 
       minimumBrakePercentage,
@@ -221,6 +273,17 @@ function App() {
   }
 
   async function handleGeneratePdf() {
+    const errors = {
+    minimumBrakePercentage: minimumBrakePercentage.trim() === "",
+    issuedByName: issuedByName.trim() === "",
+    timetableSpeed: timetableSpeed.trim() === "",
+  };
+
+  setMainErrors(errors);
+
+  const hasMainError = Object.values(errors).some((e) => e);
+  if (hasMainError) return;
+
     const state = buildStateForPdf();
 
     if (!state) {
@@ -382,25 +445,28 @@ if (state.speedCheckNo && lowerSpeed > 0) {
         <h3 style={{ marginTop: 24 }}>Lok wählen</h3>
 
         <button
-          onClick={() => setSelectedLok("G1206")}
-          style={{
-            width: "100%",
-            padding: 12,
-            marginTop: 8,
-            background: selectedLok === "G1206" ? "#1976D2" : "#B0BEC5",
-            color: "white",
-            border: "none",
-            borderRadius: 20,
-            cursor: "pointer",
-          }}
+        onClick={() => {
+        setSelectedLok("list");
+        setLokSelectOpen(true);
+        }}
+        style={{
+        width: "100%",
+        padding: 12,
+        marginTop: 8,
+        background: selectedLok === "list" ? "#1976D2" : "#B0BEC5",
+        color: "white",
+        border: "none",
+        borderRadius: 20,
+        cursor: "pointer",
+        }}
         >
-          G1206
+        Lok aus Liste wählen ({selectedListLok.name})
         </button>
 
         <button
           onClick={() => {
-            setSelectedLok("custom");
-            setCustomLokOpen(true);
+          setSelectedLok("custom");
+          setCustomLokOpen(true);
           }}
           style={{
             width: "100%",
@@ -413,7 +479,10 @@ if (state.speedCheckNo && lowerSpeed > 0) {
             cursor: "pointer",
           }}
         >
-          Eigene Lok
+          Eigene Lok{" "}
+          {selectedLok === "custom" && customLokName.trim() !== ""
+          ? `(${customLokName})`
+          : ""}
         </button>
         
         
@@ -532,24 +601,44 @@ if (state.speedCheckNo && lowerSpeed > 0) {
         </div>
 
         <input
-          value={minimumBrakePercentage}
-          onChange={(e) => setMinimumBrakePercentage(e.target.value)}
-          placeholder="Mindestbremshundertstel"
-          style={{ width: "100%", padding: 12, marginTop: 20, boxSizing: "border-box" }}
+        type="number"
+        value={minimumBrakePercentage}
+        onChange={(e) => setMinimumBrakePercentage(e.target.value)}
+        placeholder="Mindestbremshundertstel"
+        style={{
+        width: "100%",
+        padding: 12,
+        marginTop: 20,
+        boxSizing: "border-box",
+        border: mainErrors.minimumBrakePercentage ? "2px solid red" : "1px solid #ccc",
+        }}
         />
 
         <input
-          value={issuedByName}
-          onChange={(e) => setIssuedByName(e.target.value)}
-          placeholder="Name"
-          style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box" }}
+        value={issuedByName}
+        onChange={(e) => setIssuedByName(e.target.value)}
+        placeholder="Name"
+        style={{
+        width: "100%",
+        padding: 12,
+        marginTop: 10,
+        boxSizing: "border-box",
+        border: mainErrors.issuedByName ? "2px solid red" : "1px solid #ccc",
+        }}
         />
 
         <input
-          value={timetableSpeed}
-          onChange={(e) => setTimetableSpeed(e.target.value)}
-          placeholder="Fahrplangeschwindigkeit"
-          style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box" }}
+        type="number"
+        value={timetableSpeed}
+        onChange={(e) => setTimetableSpeed(e.target.value)}
+        placeholder="Fahrplangeschwindigkeit"
+        style={{
+        width: "100%",
+        padding: 12,
+        marginTop: 10,
+        boxSizing: "border-box",
+        border: mainErrors.timetableSpeed ? "2px solid red" : "1px solid #ccc",
+        }}
         />
 
         <button
@@ -578,10 +667,99 @@ if (state.speedCheckNo && lowerSpeed > 0) {
             fontSize: 12,
           }}
         >
-          BREZEL-Master | Web-Version 2.1 | by Jonas Gießmann
+          BREZEL-Master | Web-Version 2.2 | by Jonas Gießmann
         </div>
 
         </div>
+
+        {lokSelectOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              background: "white",
+              borderRadius: 20,
+              padding: 20,
+              boxSizing: "border-box",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Lok auswählen</h2>
+
+            <div
+              style={{
+                marginTop: 12,
+                overflowY: "auto",
+                border: "1px solid #D0D7DE",
+                borderRadius: 12,
+                padding: 8,
+                maxHeight: "40vh",
+              }}
+            >
+              {locomotives.map((lok) => (
+                <button
+                  key={lok.name}
+                  type="button"
+                  onClick={() => {
+                    setSelectedLok("list");
+                    setSelectedLokName(lok.name);
+                  }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: 12,
+                    marginBottom: 8,
+                    background: selectedLokName === lok.name ? "#1976D2" : "#ECEFF1",
+                    color: selectedLokName === lok.name ? "white" : "black",
+                    border: "none",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  {lok.name}
+                </button>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: 16,
+              }}
+            >
+              <button
+                onClick={() => setLokSelectOpen(false)}
+                style={{
+                  padding: "10px 16px",
+                  background: "#6E53B3",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                }}
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {customLokOpen && (
         <div
@@ -613,42 +791,70 @@ if (state.speedCheckNo && lowerSpeed > 0) {
               value={customLokName}
               onChange={(e) => setCustomLokName(e.target.value)}
               placeholder="Lokbezeichnung"
-              style={{ width: "100%", padding: 12, marginTop: 8, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: 12, marginTop: 8, boxSizing: "border-box",
+              border: customErrors.name ? "2px solid red" : "1px solid #ccc", 
+              }}
             />
 
             <input
+              type="number"
               value={customLokWeight}
               onChange={(e) => setCustomLokWeight(e.target.value)}
               placeholder="Gewicht [t]"
-              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box", 
+              border: customErrors.weight ? "2px solid red" : "1px solid #ccc",
+              }}
             />
 
             <input
+              type="number"
               value={customLokBrakeP}
               onChange={(e) => setCustomLokBrakeP(e.target.value)}
               placeholder="Bremsgewicht P [t]"
-              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box",
+              border: customErrors.brakeP ? "2px solid red" : "1px solid #ccc",
+              }}
             />
 
             <input
+              type="number"
               value={customLokBrakeG}
               onChange={(e) => setCustomLokBrakeG(e.target.value)}
               placeholder="Bremsgewicht G [t]"
-              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box",
+              border: customErrors.brakeG ? "2px solid red" : "1px solid #ccc",
+               }}
             />
 
             <input
+              type="number"
               value={customLokLength}
               onChange={(e) => setCustomLokLength(e.target.value)}
               placeholder="Länge [m]"
-              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box",
+              border: customErrors.length ? "2px solid red" : "1px solid #ccc",
+              }}
+              />
+
+              <input
+              type="number"
+              value={customLokAxles}
+              onChange={(e) => setCustomLokAxles(e.target.value)}
+              placeholder="Achsenzahl"
+              style={{ width: "100%", padding: 12, marginTop: 10, boxSizing: "border-box",
+              border: customErrors.axles ? "2px solid red" : "1px solid #ccc",
+              
+               }}
               />
 
             <input
+              type="number"
               value={customLokVmax}
               onChange={(e) => setCustomLokVmax(e.target.value)}
               placeholder="Zul. Höchstgeschwindigkeit (km/h)"
-              style={{ width: "100%", padding: 12, marginTop: 8, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: 12, marginTop: 8, boxSizing: "border-box",
+              border: customErrors.vmax ? "2px solid red" : "1px solid #ccc",
+              }}
             />
 
             <div
@@ -674,21 +880,36 @@ if (state.speedCheckNo && lowerSpeed > 0) {
               </button>
 
               <button
-                onClick={() => {
-                  setSelectedLok("custom");
-                  setCustomLokOpen(false);
-                }}
-                style={{
-                  padding: "10px 16px",
-                  background: "#6E53B3",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 12,
-                  cursor: "pointer",
-                }}
-              >
-                Speichern
-              </button>
+  onClick={() => {
+    const errors = {
+      name: customLokName.trim() === "",
+      weight: Number(customLokWeight) <= 0,
+      brakeP: Number(customLokBrakeP) <= 0,
+      brakeG: Number(customLokBrakeG) <= 0,
+      length: Number(customLokLength) <= 0,
+      vmax: Number(customLokVmax) <= 0,
+      axles: Number(customLokAxles) <= 0,
+    };
+
+    setCustomErrors(errors);
+
+    const hasError = Object.values(errors).some((e) => e);
+    if (hasError) return;
+
+    setSelectedLok("custom");
+    setCustomLokOpen(false);
+  }}
+  style={{
+    padding: "10px 16px",
+    background: "#6E53B3",
+    color: "white",
+    border: "none",
+    borderRadius: 12,
+    cursor: "pointer",
+  }}
+>
+  Speichern
+</button>
             </div>
           </div>
         </div>
@@ -720,7 +941,7 @@ if (state.speedCheckNo && lowerSpeed > 0) {
       <input
         value={directionChangeStation}
         onChange={(e) => setDirectionChangeStation(e.target.value)}
-        placeholder="Betriebsstelle des Richtungswechsels"
+        placeholder="z.B. Bruchsal"
         style={{
           width: "100%",
           padding: 12,
