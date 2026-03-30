@@ -638,6 +638,20 @@ color:
         />
 
         <input
+        type="number"
+        value={timetableSpeed}
+        onChange={(e) => setTimetableSpeed(e.target.value)}
+        placeholder="Fahrplangeschwindigkeit"
+        style={{
+        width: "100%",
+        padding: 12,
+        marginTop: 10,
+        boxSizing: "border-box",
+        border: mainErrors.timetableSpeed ? "2px solid red" : "1px solid #ccc",
+        }}
+        />
+
+        <input
         value={issuedByName}
         onChange={(e) => {setIssuedByName(e.target.value);
         localStorage.setItem("issuedByName",e.target.value);
@@ -649,20 +663,6 @@ color:
         marginTop: 10,
         boxSizing: "border-box",
         border: mainErrors.issuedByName ? "2px solid red" : "1px solid #ccc",
-        }}
-        />
-
-        <input
-        type="number"
-        value={timetableSpeed}
-        onChange={(e) => setTimetableSpeed(e.target.value)}
-        placeholder="Fahrplangeschwindigkeit"
-        style={{
-        width: "100%",
-        padding: 12,
-        marginTop: 10,
-        boxSizing: "border-box",
-        border: mainErrors.timetableSpeed ? "2px solid red" : "1px solid #ccc",
         }}
         />
 
