@@ -267,13 +267,12 @@ function parseRows(text: string): WagonRow[] {
       ? line.substring(line.indexOf(soleMatch[0]) + soleMatch[0].length).trim()
       : line;
 
-    // Erste Zahlen nach der Sohle sind die relevanten Bremszahlen.
-    // Für die Zähl-Logik reicht: wenn P oder G > 0, dann aktiv.
-    const numberTokens = (afterSole.match(/\b\d{1,3}\b/g) || [])
-      .map((m) => parseIntSafe(m));
+    const brakeMatch = afterSole.match(/^(-|\d{1,3})\s+(-|\d{1,3})\b/);
 
-    const brakeP = numberTokens[0] ?? 0;
-    const brakeG = numberTokens[1] ?? 0;
+    const brakeP =
+      brakeMatch && brakeMatch[1] !== "-" ? parseIntSafe(brakeMatch[1]) : 0;
+    const brakeG =
+      brakeMatch && brakeMatch[2] !== "-" ? parseIntSafe(brakeMatch[2]) : 0;
 
     const dangerousGoods =
       /\b\d{4}\b\s+\b\d(?:[.,]\d)?(?:\?\:\s*,\s*\d(?:[.,]\d)?)?\b/.test(line) ||
