@@ -25,6 +25,12 @@ function App() {
 
   const [minimumBrakePercentage, setMinimumBrakePercentage] = useState("");
   const [issuedByName, setIssuedByName] = useState("");
+  useEffect(() => {
+  const savedName = localStorage.getItem("issuedByName");
+  if (savedName) {
+    setIssuedByName(savedName);
+  }
+  }, []);
   const [timetableSpeed, setTimetableSpeed] = useState("");
   const [mainErrors, setMainErrors] = useState({
   minimumBrakePercentage: false,
@@ -633,7 +639,9 @@ color:
 
         <input
         value={issuedByName}
-        onChange={(e) => setIssuedByName(e.target.value)}
+        onChange={(e) => {setIssuedByName(e.target.value);
+        localStorage.setItem("issuedByName",e.target.value);
+        }}
         placeholder="Name"
         style={{
         width: "100%",
