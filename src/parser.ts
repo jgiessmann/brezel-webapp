@@ -280,11 +280,13 @@ function parseRows(text: string): WagonRow[] {
       /\b\d{4}\b\s+\b\d(?:[.,]\d)?(?:\?\:\s*,\s*\d(?:[.,]\d)?)?\b/.test(line) ||
       /\bUN\b/i.test(line);
 
-    const vmaxMatches = line.match(vmaxRegex)
-    || [];
-    const vmax = vmaxMatches.length > 0
-    ?
-    parseIntSafe(vmaxMatches[vmaxMatches.length - 1])
+    const vmaxClassMatches = [
+  ...line.matchAll(/\b(\d{2,3})\b\s+\b([A-Z])\b/g),
+];
+
+const vmax =
+  vmaxClassMatches.length > 0
+    ? parseIntSafe(vmaxClassMatches[vmaxClassMatches.length - 1][1])
     : null;
     
 
